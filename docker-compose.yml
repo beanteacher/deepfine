@@ -1,0 +1,16 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: deepfine-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: deepfine
+      MYSQL_USER: deepfine
+      MYSQL_PASSWORD: deepfine
+    volumes:
+      - deepfine-mysql-data:/var/lib/mysql
+
+volumes:
+  deepfine-mysql-data:
