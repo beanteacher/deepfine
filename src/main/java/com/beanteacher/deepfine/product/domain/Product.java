@@ -52,4 +52,11 @@ public class Product {
         }
         this.quantity -= amount;
     }
+
+    public void adjustQuantity(int targetQuantity) {
+        if (targetQuantity < 0) {
+            throw new IllegalArgumentException("조정 수량은 0 이상이어야 합니다.");
+        }
+        this.quantity = targetQuantity;
+    }
 }

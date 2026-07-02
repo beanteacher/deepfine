@@ -48,4 +48,18 @@ public class StockService {
 
         return StockDto.Response.from(product);
     }
+
+    /**
+     * 재고 조정 처리
+     * 실사 후 시스템 수량을 실물 수량으로 직접 맞출 때 사용
+     */
+    public StockDto.Response adjust(StockDto.AdjustmentRequest request) {
+        Product product = productRepository.findByIdWithLock(request.productId())
+                .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다: " + request.productId()));
+
+        strategyFactory.getStrategy(MovementType.ADJUSTMENT).process(product, request.targetQuantity());
+        stockMovementRepository.save(StockMovement.create(product, MovementType.ADJUSTMENT, request.targetQuantity()));
+
+        return StockDto.Response.from(product);
+    }
 }

@@ -24,4 +24,9 @@ public class StockController {
     public ResponseEntity<ApiResponse<StockDto.Response>> outbound(@RequestBody @Valid StockDto.OutboundRequest request) {
         return ResponseEntity.ok(ApiResponse.success(stockService.outbound(request)));
     }
+
+    @PostMapping("/adjustment")
+    public ResponseEntity<ApiResponse<StockDto.Response>> adjust(@RequestBody @Valid StockDto.AdjustmentRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(stockService.adjust(request)));
+    }
 }
