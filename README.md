@@ -88,6 +88,11 @@ Controller  →  Service  →  Repository  →  Domain(Entity)
 Optional<Inventory> findByItemIdAndZoneIdWithLock(Long itemId, Long zoneId);
 ```
 
+> **`@Query` JPQL을 명시한 이유**
+> `item`, `zone`은 연관 객체(ManyToOne)이므로 메서드명 파생 쿼리(`findByItemIdAndZoneId`)로도 조회는 가능하다.
+> 그러나 `@Lock(PESSIMISTIC_WRITE)`와 파생 쿼리를 함께 사용하면 Lock이 정상 적용되지 않거나 예외가 발생하는 케이스가 존재한다.
+> JPQL을 명시하면 Lock 적용 대상이 명확해지고 동작이 안정적으로 보장되므로 `@Query` 조합을 사용했다.
+
 | 케이스 | 처리 방식 |
 |--------|-----------|
 | 기존 재고 동시 수정 | PESSIMISTIC_WRITE → 선점 스레드가 완료 후 해제 |
