@@ -1,6 +1,8 @@
-package com.beanteacher.deepfine.product.domain;
+package com.beanteacher.deepfine.inventory.domain;
 
 import com.beanteacher.deepfine.exception.InsufficientStockException;
+import com.beanteacher.deepfine.item.domain.Item;
+import com.beanteacher.deepfine.zone.domain.Zone;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -12,18 +14,24 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "products")
+@Table(name = "inventories",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"item_id", "zone_id"}))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
-public class Product {
+public class Inventory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private String name;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "item_id", nullable = false)
+    private Item item;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "zone_id", nullable = false)
+    private Zone zone;
 
     @Column(nullable = false)
     private int quantity;
@@ -35,11 +43,12 @@ public class Product {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
-    public static Product create(String name) {
-        Product product = new Product();
-        product.name = name;
-        product.quantity = 0;
-        return product;
+    public static Inventory create(Item item, Zone zone) {
+        Inventory inventory = new Inventory();
+        inventory.item = item;
+        inventory.zone = zone;
+        inventory.quantity = 0;
+        return inventory;
     }
 
     public void increaseQuantity(int amount) {

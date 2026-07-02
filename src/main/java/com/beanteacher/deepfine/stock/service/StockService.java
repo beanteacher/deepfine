@@ -1,12 +1,16 @@
 package com.beanteacher.deepfine.stock.service;
 
-import com.beanteacher.deepfine.product.domain.Product;
-import com.beanteacher.deepfine.product.repository.ProductRepository;
+import com.beanteacher.deepfine.inventory.domain.Inventory;
+import com.beanteacher.deepfine.inventory.repository.InventoryRepository;
+import com.beanteacher.deepfine.item.domain.Item;
+import com.beanteacher.deepfine.item.repository.ItemRepository;
 import com.beanteacher.deepfine.stock.domain.MovementType;
 import com.beanteacher.deepfine.stock.domain.StockMovement;
 import com.beanteacher.deepfine.stock.dto.StockDto;
 import com.beanteacher.deepfine.stock.repository.StockMovementRepository;
 import com.beanteacher.deepfine.stock.strategy.StockMovementStrategyFactory;
+import com.beanteacher.deepfine.zone.domain.Zone;
+import com.beanteacher.deepfine.zone.repository.ZoneRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,49 +21,52 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class StockService {
 
-    private final ProductRepository productRepository;
+    private final ItemRepository itemRepository;
+    private final ZoneRepository zoneRepository;
+    private final InventoryRepository inventoryRepository;
     private final StockMovementRepository stockMovementRepository;
     private final StockMovementStrategyFactory strategyFactory;
 
-    /**
-     * 입고 처리
-     * 미등록 상품이면 신규 등록 후 입고, PESSIMISTIC_WRITE 락으로 동시성 제어
-     */
     public StockDto.Response inbound(StockDto.InboundRequest request) {
-        Product product = productRepository.findByNameWithLock(request.productName())
-                .orElseGet(() -> productRepository.save(Product.create(request.productName())));
+        Item item = itemRepository.findByNameWithLock(request.itemName())
+                .orElseGet(() -> itemRepository.save(Item.create(request.itemName())));
 
-        strategyFactory.getStrategy(MovementType.INBOUND).process(product, request.quantity());
-        stockMovementRepository.save(StockMovement.create(product, MovementType.INBOUND, request.quantity()));
+        Zone zone = zoneRepository.findById(request.zoneId())
+                .orElseThrow(() -> new EntityNotFoundException("구역을 찾을 수 없습니다: " + request.zoneId()));
 
-        return StockDto.Response.from(product);
+        Inventory inventory = inventoryRepository
+                .findByItemIdAndZoneIdWithLock(item.getId(), zone.getId())
+                .orElseGet(() -> inventoryRepository.save(Inventory.create(item, zone)));
+
+        strategyFactory.getStrategy(MovementType.INBOUND).process(inventory, request.quantity());
+        stockMovementRepository.save(StockMovement.create(item, zone, MovementType.INBOUND, request.quantity()));
+
+        return StockDto.Response.from(inventory);
     }
 
-    /**
-     * 출고 처리
-     * 재고 부족 시 InsufficientStockException, PESSIMISTIC_WRITE 락으로 동시성 제어
-     */
     public StockDto.Response outbound(StockDto.OutboundRequest request) {
-        Product product = productRepository.findByIdWithLock(request.productId())
-                .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다: " + request.productId()));
+        Inventory inventory = inventoryRepository
+                .findByItemIdAndZoneIdWithLock(request.itemId(), request.zoneId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "해당 구역에 품목 재고가 없습니다. 품목 ID: " + request.itemId() + ", 구역 ID: " + request.zoneId()));
 
-        strategyFactory.getStrategy(MovementType.OUTBOUND).process(product, request.quantity());
-        stockMovementRepository.save(StockMovement.create(product, MovementType.OUTBOUND, request.quantity()));
+        strategyFactory.getStrategy(MovementType.OUTBOUND).process(inventory, request.quantity());
+        stockMovementRepository.save(StockMovement.create(
+                inventory.getItem(), inventory.getZone(), MovementType.OUTBOUND, request.quantity()));
 
-        return StockDto.Response.from(product);
+        return StockDto.Response.from(inventory);
     }
 
-    /**
-     * 재고 조정 처리
-     * 실사 후 시스템 수량을 실물 수량으로 직접 맞출 때 사용
-     */
     public StockDto.Response adjust(StockDto.AdjustmentRequest request) {
-        Product product = productRepository.findByIdWithLock(request.productId())
-                .orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다: " + request.productId()));
+        Inventory inventory = inventoryRepository
+                .findByItemIdAndZoneIdWithLock(request.itemId(), request.zoneId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "해당 구역에 품목 재고가 없습니다. 품목 ID: " + request.itemId() + ", 구역 ID: " + request.zoneId()));
 
-        strategyFactory.getStrategy(MovementType.ADJUSTMENT).process(product, request.targetQuantity());
-        stockMovementRepository.save(StockMovement.create(product, MovementType.ADJUSTMENT, request.targetQuantity()));
+        strategyFactory.getStrategy(MovementType.ADJUSTMENT).process(inventory, request.targetQuantity());
+        stockMovementRepository.save(StockMovement.create(
+                inventory.getItem(), inventory.getZone(), MovementType.ADJUSTMENT, request.targetQuantity()));
 
-        return StockDto.Response.from(product);
+        return StockDto.Response.from(inventory);
     }
 }

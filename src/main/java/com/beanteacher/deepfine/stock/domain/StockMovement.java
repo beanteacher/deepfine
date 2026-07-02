@@ -1,6 +1,7 @@
 package com.beanteacher.deepfine.stock.domain;
 
-import com.beanteacher.deepfine.product.domain.Product;
+import com.beanteacher.deepfine.item.domain.Item;
+import com.beanteacher.deepfine.zone.domain.Zone;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -22,8 +23,12 @@ public class StockMovement {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
-    private Product product;
+    @JoinColumn(name = "item_id", nullable = false)
+    private Item item;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "zone_id", nullable = false)
+    private Zone zone;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -36,9 +41,10 @@ public class StockMovement {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    public static StockMovement create(Product product, MovementType movementType, int quantity) {
+    public static StockMovement create(Item item, Zone zone, MovementType movementType, int quantity) {
         StockMovement movement = new StockMovement();
-        movement.product = product;
+        movement.item = item;
+        movement.zone = zone;
         movement.movementType = movementType;
         movement.quantity = quantity;
         return movement;

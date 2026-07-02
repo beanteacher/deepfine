@@ -1,6 +1,6 @@
 package com.beanteacher.deepfine.stock.strategy;
 
-import com.beanteacher.deepfine.product.domain.Product;
+import com.beanteacher.deepfine.inventory.domain.Inventory;
 import com.beanteacher.deepfine.stock.domain.MovementType;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +13,7 @@ public class InboundMovementStrategy implements StockMovementStrategy {
     }
 
     @Override
-    public void process(Product product, int quantity) {
-        product.increaseQuantity(quantity);
+    public void process(Inventory inventory, int quantity) {
+        inventory.increaseQuantity(quantity);
     }
 }
