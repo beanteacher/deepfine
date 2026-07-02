@@ -16,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -55,6 +57,14 @@ public class StockService {
                 inventory.getItem(), inventory.getZone(), MovementType.OUTBOUND, request.quantity()));
 
         return StockDto.Response.from(inventory);
+    }
+
+    @Transactional(readOnly = true)
+    public List<StockDto.Response> getStock(Long itemId) {
+        itemRepository.findById(itemId)
+                .orElseThrow(() -> new EntityNotFoundException("품목을 찾을 수 없습니다: " + itemId));
+        return inventoryRepository.findByItemIdWithZoneAndSite(itemId)
+                .stream().map(StockDto.Response::from).toList();
     }
 
     public StockDto.Response adjust(StockDto.AdjustmentRequest request) {
