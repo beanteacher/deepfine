@@ -1,16 +1,15 @@
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: deepfine-mysql
+  postgres:
+    image: postgres:16-alpine
+    container_name: deepfine-postgres
     ports:
-      - "3306:3306"
+      - "5432:5432"
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: deepfine
-      MYSQL_USER: deepfine
-      MYSQL_PASSWORD: deepfine
+      POSTGRES_DB: deepfine
+      POSTGRES_USER: deepfine
+      POSTGRES_PASSWORD: deepfine
     volumes:
-      - deepfine-mysql-data:/var/lib/mysql
+      - deepfine-postgres-data:/var/lib/postgresql/data
 
 volumes:
-  deepfine-mysql-data:
+  deepfine-postgres-data:
